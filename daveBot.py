@@ -43,7 +43,8 @@ client = commands.Bot(command_prefix=daveBotCommandPrefix)
 @client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
-    await client.change_presence(status=discord.Status.online,activity=discord.Activity(type=discord.ActivityType.listening,name='your commands'))
+    await client.change_presence(status=discord.Status.online,
+                                 activity=discord.Activity(type=discord.ActivityType.listening, name='your commands'))
 
 
 @client.command(help='Add yourself to the queue for office hours')
@@ -70,18 +71,19 @@ async def whosNext(ctx):
     await ctx.channel.purge(limit=1)
 
     msg = 'Now serving:\t'
-    embed=discord.Embed(title="Now Serving:")
+    embed = discord.Embed(title="Now Serving:")
 
     queue_json = load_student_queue()
     student_queue = queue_json[jsonKey]
 
     if len(student_queue) > 0:
         msg += student_queue[0]
-        embed.add_field(name='\U0001F9D1\u200D\U0001F393',value=student_queue[0],inline=True)
+        embed.add_field(name='\U0001F9D1\u200D\U0001F393', value=student_queue[0], inline=True)
         student_queue.pop(0)
         save_student_queue(queue_json)
 
     await ctx.send(embed=embed)
+
 
 # @client.command()
 # async def clear(ctx, amount=5):
@@ -98,20 +100,20 @@ async def imDone(ctx):
 @client.command(help='Displays the queue')
 async def whosHere(ctx):
     await ctx.channel.purge(limit=1)
-    embed=discord.Embed(title="These are the people in your neighborhood:")
+    embed = discord.Embed(title="These are the people in your neighborhood:")
 
     queue_json = load_student_queue()
     student_queue = queue_json[jsonKey]
 
     if len(student_queue) > 0:
-        msg=''
+        msg = ''
     else:
-        msg='Nobody! :) Join the voice channel'
+        msg = 'Nobody! :) Join the voice channel'
 
     for qPos in range(len(student_queue)):
-        msg = msg + str(qPos+1)+'. '+ student_queue[qPos] +'\n'
+        msg = msg + str(qPos + 1) + '. ' + student_queue[qPos] + '\n'
 
-    embed.add_field(name='\U0001F393',value=msg,inline=False)
+    embed.add_field(name='\U0001F393', value=msg, inline=False)
 
     await ctx.send(embed=embed)
 
@@ -146,11 +148,12 @@ async def pollFaces(ctx):
     await msg.add_reaction('\u0034\uFE0F\u20E3')  # add 4
     await msg.add_reaction('\u0035\uFE0F\u20E3')  # add 5
 
+
 @client.command(help='Poll for Questions, Answers, Ice Cream?', hidden=True)
 async def pollQAI(ctx):
     await ctx.channel.purge(limit=1)
-    
-    embed=discord.Embed(title="Poll")
+
+    embed = discord.Embed(title="Poll")
     embed.add_field(name='\u2754', value="Questions?", inline=True)
     embed.add_field(name='\U0001F4A1', value="Answers?", inline=True)
     embed.add_field(name='\U0001F366', value="Ice Cream?", inline=True)
@@ -160,9 +163,9 @@ async def pollQAI(ctx):
     await msg.add_reaction('\U0001F4A1')  # add light bulb
     await msg.add_reaction('\U0001F366')  # add ice cream
 
-discordKey=os.getenv("DAVEBOT")
+
+discordKey = os.getenv("DAVEBOT")
 client.run(discordKey)
 
 # generic poll command
 # multiple servers aka peterBot
-
