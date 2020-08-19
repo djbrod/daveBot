@@ -103,15 +103,17 @@ async def whosHere(ctx):
     embed = discord.Embed(title="These are the people in your neighborhood:")
 
     queue_json = load_student_queue()
-    student_queue = queue_json[jsonKey]
+    if jsonKey in queue_json:
+        student_queue = queue_json[jsonKey]
+    else:
+        student_queue = []
 
     if len(student_queue) > 0:
         msg = ''
+        for qPos in range(len(student_queue)):
+            msg = msg + str(qPos + 1) + '. ' + student_queue[qPos] + '\n'
     else:
         msg = 'Nobody! :) Join the voice channel'
-
-    for qPos in range(len(student_queue)):
-        msg = msg + str(qPos + 1) + '. ' + student_queue[qPos] + '\n'
 
     embed.add_field(name='\U0001F393', value=msg, inline=False)
 
