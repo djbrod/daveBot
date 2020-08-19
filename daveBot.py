@@ -2,17 +2,39 @@
 import json
 import os
 import sys
+import re
 
 import discord
 from discord.ext import commands
 
-jsonKey = 'queue'
+name_of_queue = 'queue'  # Changed to the sanitized server name later!
 filename = 'queue.json'
 daveBotCommandPrefix = '!'
 
 
+def get_sanitized_identifier(string_to_sanitize):
+    pattern = re.compile('[\W_]+')
+    return pattern.sub('', string_to_sanitize)
+
+
 def get_empty_json():
-    return {jsonKey: []}
+    return {name_of_queue: []}
+
+
+def get_server_queue(ctx):
+    name_of_queue = get_sanitized_identifier(ctx.channel.guild.name)
+    all_queues = load_student_queue()
+    if name_of_queue in all_queues:
+        return all_queues[name_of_queue]
+    else:
+        return []
+
+
+def update_server_queue(ctx, queue):
+    name_of_queue = get_sanitized_identifier(ctx.channel.guild.name)
+    all_queues = load_student_queue()
+    all_queues[name_of_queue] = queue
+    save_student_queue(all_queues)
 
 
 def load_student_queue():
@@ -29,11 +51,8 @@ def save_student_queue(obj):
     if not isinstance(obj, dict):
         print("Please check type of object - should be of type 'dict'", file=sys.stderr)
     else:
-        if jsonKey not in obj.keys():
-            print("Please check type of object being saved, should include json 'key' for the queue", file=sys.stderr)
-        else:
-            with open(filename, 'w') as outfile:
-                json.dump(obj, outfile, indent=4)
+        with open(filename, 'w') as outfile:
+            json.dump(obj, outfile, indent=4)
 
 
 # Create Discord Bot
@@ -46,23 +65,36 @@ async def on_ready():
     await client.change_presence(status=discord.Status.online,
                                  activity=discord.Activity(type=discord.ActivityType.listening, name='your commands'))
 
+    all_queues = load_student_queue()
+
+    for guild in client.guilds:
+        sanitized_name = get_sanitized_identifier(guild.name)
+        queue_found = False
+        for queue in all_queues:
+            if sanitized_name in queue:
+                queue_found = True
+
+        if not queue_found:
+            all_queues[sanitized_name] = []
+            print("Adding a server:" + sanitized_name)
+
+    save_student_queue(all_queues)
+
 
 @client.command(help='Add yourself to the queue for office hours')
 async def joinQ(ctx):
     await ctx.channel.purge(limit=1)
 
     student_name = ctx.author.display_name
-
-    queue_json = load_student_queue()
-    student_queue = queue_json[jsonKey]
+    student_queue = get_server_queue(ctx)
 
     if student_name in student_queue:
         await ctx.send(f'{student_name}, you\'re already in the queue knucklehead!')
     else:
-        student_queue_position = len(queue_json[jsonKey]) + 1
+        student_queue_position = len(student_queue) + 1
         await ctx.send(f'{student_name} is \\#{student_queue_position} in line')
         student_queue.append(student_name)
-        save_student_queue(queue_json)
+        update_server_queue(ctx, student_queue)
 
 
 @client.command(help='Dequeue the next student', hidden=True)
@@ -73,14 +105,13 @@ async def whosNext(ctx):
     msg = 'Now serving:\t'
     embed = discord.Embed(title="Now Serving:")
 
-    queue_json = load_student_queue()
-    student_queue = queue_json[jsonKey]
+    student_queue = get_server_queue(ctx)
 
     if len(student_queue) > 0:
         msg += student_queue[0]
         embed.add_field(name='\U0001F9D1\u200D\U0001F393', value=student_queue[0], inline=True)
         student_queue.pop(0)
-        save_student_queue(queue_json)
+        update_server_queue(ctx, student_queue)
 
     await ctx.send(embed=embed)
 
@@ -94,7 +125,8 @@ async def whosNext(ctx):
 async def imDone(ctx):
     await ctx.channel.purge(limit=1)
     await ctx.send('You don\'t have to go home but you can\'t stay here. Dave quits.')
-    save_student_queue(get_empty_json())
+    name_of_queue = get_sanitized_identifier(ctx.channel.guild.name)
+    update_server_queue(ctx, {name_of_queue : []})
 
 
 @client.command(help='Displays the queue')
@@ -102,18 +134,13 @@ async def whosHere(ctx):
     await ctx.channel.purge(limit=1)
     embed = discord.Embed(title="These are the people in your neighborhood:")
 
-    queue_json = load_student_queue()
-    if jsonKey in queue_json:
-        student_queue = queue_json[jsonKey]
-    else:
-        student_queue = []
-
+    student_queue = get_server_queue(ctx)
     if len(student_queue) > 0:
         msg = ''
         for qPos in range(len(student_queue)):
             msg = msg + str(qPos + 1) + '. ' + student_queue[qPos] + '\n'
     else:
-        msg = 'Nobody! :) Join the voice channel'
+        msg = 'Nobody in ' + ctx.channel.guild.name + '! :) Join the voice channel'
 
     embed.add_field(name='\U0001F393', value=msg, inline=False)
 
@@ -128,13 +155,12 @@ async def leaveQ(ctx):
 
     msg = 'Peace out shorty!\t @' + student_name
 
-    queue_json = load_student_queue()
-    student_queue = queue_json[jsonKey]
+    student_queue = get_server_queue(ctx)
 
     if student_name in student_queue:
         student_queue.remove(student_name)
         await ctx.send(msg)
-        save_student_queue(queue_json)
+        update_server_queue(ctx, student_queue)
     else:
         await ctx.send(f'{student_name}, you\'re not in the queue yet knucklehead!')
 
