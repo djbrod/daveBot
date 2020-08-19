@@ -43,6 +43,7 @@ client = commands.Bot(command_prefix=daveBotCommandPrefix)
 @client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
+    await client.change_presence(status=discord.Status.online,activity=discord.Activity(type=discord.ActivityType.listening,name='your commands'))
 
 
 @client.command(help='Add yourself to the queue for office hours')
