@@ -238,7 +238,7 @@ async def callBack(ctx):
 
 
 discordKey = os.getenv("DAVEBOT")
-client.run(DAVEBOT)
+client.run(discordKey)
 
 # generic poll command
 # breakout room (Error checking)
