@@ -22,6 +22,7 @@ def get_empty_json():
     return {name_of_queue: []}
 
 
+# noinspection PyShadowingNames
 def get_server_queue(ctx):
     name_of_queue = get_sanitized_identifier(ctx.channel.guild.name)
     all_queues = load_student_queue()
@@ -31,6 +32,7 @@ def get_server_queue(ctx):
         return []
 
 
+# noinspection PyShadowingNames
 def update_server_queue(ctx, queue):
     name_of_queue = get_sanitized_identifier(ctx.channel.guild.name)
     all_queues = load_student_queue()
@@ -126,8 +128,7 @@ async def whosNext(ctx):
 async def imDone(ctx):
     await ctx.channel.purge(limit=1)
     await ctx.send('You don\'t have to go home but you can\'t stay here. Dave quits.')
-    name_of_queue = get_sanitized_identifier(ctx.channel.guild.name)
-    update_server_queue(ctx, {name_of_queue : []})
+    update_server_queue(ctx, [])
 
 
 @client.command(help='Displays the queue')
@@ -192,34 +193,37 @@ async def pollQAI(ctx):
     await msg.add_reaction('\U0001F4A1')  # add light bulb
     await msg.add_reaction('\U0001F366')  # add ice cream
 
+
 @client.command(help='Banish students to breakout rooms.', hidden=True)
 @commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
 async def breakout(ctx, numberOfRooms=3):
     await ctx.channel.purge(limit=1)
 
-    breakouts=[]
-    breakoutCategory=await ctx.guild.create_category('Breakout Rooms')
+    breakouts = []
+    breakoutCategory = await ctx.guild.create_category('Breakout Rooms')
     for roomNumber in range(numberOfRooms):
-        breakouts.append(await ctx.guild.create_voice_channel('Breakout',category=breakoutCategory))
+        breakouts.append(await ctx.guild.create_voice_channel('Breakout', category=breakoutCategory))
 
-    channels = [channel for channel in client.get_all_channels() if (channel.name=='Classroom')&(channel.guild.name==ctx.guild.name)]
+    channels = [channel for channel in client.get_all_channels() if (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
     classroomMembers = channels[0].members
     random.shuffle(classroomMembers)
     for memberNumber in range(len(classroomMembers)):
-        await classroomMembers[memberNumber].move_to(breakouts[memberNumber%numberOfRooms])
+        await classroomMembers[memberNumber].move_to(breakouts[memberNumber % numberOfRooms])
+
 
 @client.command(help='Remove breakout rooms and breakout room category ', hidden=True)
 @commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
 async def cleanBreakouts(ctx):
     await ctx.channel.purge(limit=1)
 
-    breakouts = [channel for channel in client.get_all_channels() if (channel.name=='Breakout')&(channel.guild.name==ctx.guild.name)]
+    breakouts = [channel for channel in client.get_all_channels() if (channel.name == 'Breakout') & (channel.guild.name == ctx.guild.name)]
     for room in breakouts:
         await room.delete()
 
     breakoutCategory = [category for category in ctx.guild.categories if (category.name == 'Breakout Rooms') & (category.guild.name == ctx.guild.name)]
     for category in breakoutCategory:
         await category.delete()
+
 
 @client.command(help='Call students back from breakout rooms', hidden=True)
 @commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
@@ -229,7 +233,7 @@ async def callBack(ctx):
     channels = [channel for channel in client.get_all_channels() if(channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
     classroom = channels[0]
 
-    breakouts = [channel for channel in client.get_all_channels() if (channel.name=='Breakout')&(channel.guild.name==ctx.guild.name)]
+    breakouts = [channel for channel in client.get_all_channels() if (channel.name == 'Breakout') & (channel.guild.name == ctx.guild.name)]
     for room in breakouts:
         for member in room.members:
             await member.move_to(classroom)
@@ -238,10 +242,9 @@ async def callBack(ctx):
 
 
 discordKey = os.getenv("DAVEBOT")
-client.run(DAVEBOT)
+client.run(discordKey)
 
 # generic poll command
 # breakout room (Error checking)
 # attendance recorder
 # queue metrics
-
