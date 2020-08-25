@@ -119,9 +119,10 @@ async def whosNext(ctx):
     await ctx.send(embed=embed)
 
 
-# @client.command()
-# async def clear(ctx, amount=5):
-#    await ctx.channel.purge(limit=amount)
+@client.command()
+@commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
+async def clear(ctx, amount=5):
+    await ctx.channel.purge(limit=amount)
 
 @client.command(help='Clears the queue', hidden=True)
 @commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
@@ -205,9 +206,11 @@ async def breakout(ctx, numberOfRooms=3):
         breakouts.append(await ctx.guild.create_voice_channel('Breakout', category=breakoutCategory))
 
     channels = [channel for channel in client.get_all_channels() if (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
-    classroomMembers = channels[0].members
+    #classroomMembers = channels[0].members
+    classroomMembers = [member for member in channels[0].members if "professor" not in [role.name for role in member.roles]]
     random.shuffle(classroomMembers)
     for memberNumber in range(len(classroomMembers)):
+        #if "professor" not in [role.name for role in classroomMembers[memberNumber].roles]:
         await classroomMembers[memberNumber].move_to(breakouts[memberNumber % numberOfRooms])
 
 
