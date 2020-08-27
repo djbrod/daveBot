@@ -4,12 +4,15 @@ import os
 import sys
 import re
 import random
+import datetime
 
 import discord
 from discord.ext import commands
 
 name_of_queue = 'queue'  # Changed to the sanitized server name later!
+name_of_roll = 'roll'  # Changed to the sanitized server name later!
 filename = 'queue.json'
+rollFilename = 'roll.json'
 daveBotCommandPrefix = '!'
 
 
@@ -17,10 +20,8 @@ def get_sanitized_identifier(string_to_sanitize):
     pattern = re.compile('[\W_]+')
     return pattern.sub('', string_to_sanitize)
 
-
-def get_empty_json():
-    return {name_of_queue: []}
-
+def get_empty_json(keyName):
+    return {keyName: []}
 
 # noinspection PyShadowingNames
 def get_server_queue(ctx):
@@ -41,7 +42,7 @@ def update_server_queue(ctx, queue):
 
 
 def load_student_queue():
-    file_json_data = get_empty_json()
+    file_json_data = get_empty_json(name_of_queue)
 
     if os.path.exists(filename):
         with open(filename) as f:
@@ -56,6 +57,23 @@ def save_student_queue(obj):
     else:
         with open(filename, 'w') as outfile:
             json.dump(obj, outfile, indent=4)
+
+def load_roll():
+    file_json_data = get_empty_json(name_of_roll)
+
+    if os.path.exists(rollFilename):
+        with open(rollFilename) as f:
+            file_json_data = json.load(f)
+
+    return file_json_data
+
+def save_roll(obj):
+    if not isinstance(obj, dict):
+        print("Please check type of object - should be of type 'dict'", file=sys.stderr)
+    else:
+        with open(rollFilename, 'w') as outfile:
+            json.dump(obj, outfile, indent=4)
+
 
 
 # Create Discord Bot
@@ -119,10 +137,10 @@ async def whosNext(ctx):
     await ctx.send(embed=embed)
 
 
-@client.command()
+@client.command(help='Clears a number of previous messages', hidden=True)
 @commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
 async def clear(ctx, amount=5):
-    await ctx.channel.purge(limit=amount)
+    await ctx.channel.purge(limit=amount+1)
 
 @client.command(help='Clears the queue', hidden=True)
 @commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
@@ -206,11 +224,9 @@ async def breakout(ctx, numberOfRooms=3):
         breakouts.append(await ctx.guild.create_voice_channel('Breakout', category=breakoutCategory))
 
     channels = [channel for channel in client.get_all_channels() if (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
-    #classroomMembers = channels[0].members
     classroomMembers = [member for member in channels[0].members if "professor" not in [role.name for role in member.roles]]
     random.shuffle(classroomMembers)
     for memberNumber in range(len(classroomMembers)):
-        #if "professor" not in [role.name for role in classroomMembers[memberNumber].roles]:
         await classroomMembers[memberNumber].move_to(breakouts[memberNumber % numberOfRooms])
 
 
@@ -243,11 +259,27 @@ async def callBack(ctx):
 
     await cleanBreakouts(ctx)
 
+@client.command(help='Record roll from Classroom Voice Channel', hidden=True)
+@commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
+async def callRoll(ctx,course):
+    await ctx.channel.purge(limit=1)
+    course = course.upper()
+
+    roll=load_roll()
+    if course not in roll.keys():
+        roll[course]={}
+
+    channels = [channel for channel in client.get_all_channels() if (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
+    classroomMembers = [member for member in channels[0].members if "professor" not in [role.name for role in member.roles]]
+    for member in classroomMembers:
+        if member.name not in roll[course].keys():
+            roll[course][member.name]=[]
+        if str(datetime.date.today()) not in roll[course][member.name]:
+            roll[course][member.name].append(str(datetime.date.today()))
+    save_roll(roll)
 
 discordKey = os.getenv("DAVEBOT")
 client.run(discordKey)
 
 # generic poll command
-# breakout room (Error checking)
-# attendance recorder
 # queue metrics
