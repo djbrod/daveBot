@@ -280,6 +280,7 @@ async def callRoll(ctx, course=None):
 
     roll = load_roll()
     if course not in roll.keys():
+        # noinspection PyTypeChecker
         roll[course] = {}
 
     channels = [channel for channel in client.get_all_channels() if
