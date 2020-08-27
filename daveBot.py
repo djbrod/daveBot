@@ -20,8 +20,10 @@ def get_sanitized_identifier(string_to_sanitize):
     pattern = re.compile('[\W_]+')
     return pattern.sub('', string_to_sanitize)
 
+
 def get_empty_json(keyName):
     return {keyName: []}
+
 
 # noinspection PyShadowingNames
 def get_server_queue(ctx):
@@ -58,6 +60,7 @@ def save_student_queue(obj):
         with open(filename, 'w') as outfile:
             json.dump(obj, outfile, indent=4)
 
+
 def load_roll():
     file_json_data = get_empty_json(name_of_roll)
 
@@ -67,13 +70,13 @@ def load_roll():
 
     return file_json_data
 
+
 def save_roll(obj):
     if not isinstance(obj, dict):
         print("Please check type of object - should be of type 'dict'", file=sys.stderr)
     else:
         with open(rollFilename, 'w') as outfile:
             json.dump(obj, outfile, indent=4)
-
 
 
 # Create Discord Bot
@@ -140,7 +143,8 @@ async def whosNext(ctx):
 @client.command(help='Clears a number of previous messages', hidden=True)
 @commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
 async def clear(ctx, amount=5):
-    await ctx.channel.purge(limit=amount+1)
+    await ctx.channel.purge(limit=amount + 1)
+
 
 @client.command(help='Clears the queue', hidden=True)
 @commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
@@ -223,8 +227,10 @@ async def breakout(ctx, numberOfRooms=3):
     for roomNumber in range(numberOfRooms):
         breakouts.append(await ctx.guild.create_voice_channel('Breakout', category=breakoutCategory))
 
-    channels = [channel for channel in client.get_all_channels() if (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
-    classroomMembers = [member for member in channels[0].members if "professor" not in [role.name for role in member.roles]]
+    channels = [channel for channel in client.get_all_channels() if
+                (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
+    classroomMembers = [member for member in channels[0].members if
+                        "professor" not in [role.name for role in member.roles]]
     random.shuffle(classroomMembers)
     for memberNumber in range(len(classroomMembers)):
         await classroomMembers[memberNumber].move_to(breakouts[memberNumber % numberOfRooms])
@@ -235,11 +241,13 @@ async def breakout(ctx, numberOfRooms=3):
 async def cleanBreakouts(ctx):
     await ctx.channel.purge(limit=1)
 
-    breakouts = [channel for channel in client.get_all_channels() if (channel.name == 'Breakout') & (channel.guild.name == ctx.guild.name)]
+    breakouts = [channel for channel in client.get_all_channels() if
+                 (channel.name == 'Breakout') & (channel.guild.name == ctx.guild.name)]
     for room in breakouts:
         await room.delete()
 
-    breakoutCategory = [category for category in ctx.guild.categories if (category.name == 'Breakout Rooms') & (category.guild.name == ctx.guild.name)]
+    breakoutCategory = [category for category in ctx.guild.categories if
+                        (category.name == 'Breakout Rooms') & (category.guild.name == ctx.guild.name)]
     for category in breakoutCategory:
         await category.delete()
 
@@ -249,34 +257,42 @@ async def cleanBreakouts(ctx):
 async def callBack(ctx):
     await ctx.channel.purge(limit=1)
 
-    channels = [channel for channel in client.get_all_channels() if(channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
+    channels = [channel for channel in client.get_all_channels() if
+                (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
     classroom = channels[0]
 
-    breakouts = [channel for channel in client.get_all_channels() if (channel.name == 'Breakout') & (channel.guild.name == ctx.guild.name)]
+    breakouts = [channel for channel in client.get_all_channels() if
+                 (channel.name == 'Breakout') & (channel.guild.name == ctx.guild.name)]
     for room in breakouts:
         for member in room.members:
             await member.move_to(classroom)
 
     await cleanBreakouts(ctx)
 
+
 @client.command(help='Record roll from Classroom Voice Channel', hidden=True)
 @commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
-async def callRoll(ctx,course):
+async def callRoll(ctx, course=None):
     await ctx.channel.purge(limit=1)
+    if course is None:
+        course = ctx.guild.name
     course = course.upper()
 
-    roll=load_roll()
+    roll = load_roll()
     if course not in roll.keys():
-        roll[course]={}
+        roll[course] = {}
 
-    channels = [channel for channel in client.get_all_channels() if (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
-    classroomMembers = [member for member in channels[0].members if "professor" not in [role.name for role in member.roles]]
+    channels = [channel for channel in client.get_all_channels() if
+                (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
+    classroomMembers = [member for member in channels[0].members if
+                        "professor" not in [role.name for role in member.roles]]
     for member in classroomMembers:
         if member.name not in roll[course].keys():
-            roll[course][member.name]=[]
+            roll[course][member.name] = []
         if str(datetime.date.today()) not in roll[course][member.name]:
             roll[course][member.name].append(str(datetime.date.today()))
     save_roll(roll)
+
 
 discordKey = os.getenv("DAVEBOT")
 client.run(discordKey)
