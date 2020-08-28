@@ -304,9 +304,12 @@ async def bingo(ctx):
                 (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
     classroomMembers = [member for member in channels[0].members if
                         "professor" not in [role.name for role in member.roles]]
-    the_chosen_one = random.choice(classroomMembers)
-    msg = await ctx.send(f'Tag, {the_chosen_one}, you\'re it!')
-    await msg.add_reaction('\U0001F929')  # add star struck
+    if len(classroomMembers) > 0:
+        the_chosen_one = random.choice(classroomMembers)
+        msg = await ctx.send(f'Tag, {the_chosen_one}, you\'re it!')
+        await msg.add_reaction('\U0001F929')  # add star struck
+    else:
+        await ctx.send(f'No one is in the classroom!')
 
 discordKey = os.getenv("DAVEBOT")
 client.run(discordKey)
