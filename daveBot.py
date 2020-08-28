@@ -73,6 +73,14 @@ def load_roll():
     return load_json('roll', get_empty_json('roll'))
 
 
+def save_bingo(obj):
+    save_json('bingo', obj)
+
+
+def load_bingo():
+    return load_json('bingo', get_empty_json('bingo'))
+
+
 # Create Discord Bot
 client = commands.Bot(command_prefix=daveBotCommandPrefix)
 
@@ -296,14 +304,30 @@ async def bingo(ctx):
 
     channels = [channel for channel in client.get_all_channels() if
                 (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
-    classroomMembers = [member for member in channels[0].members if
+    classroomMembers = [member.name for member in channels[0].members if
                         "professor" not in [role.name for role in member.roles]]
-    if len(classroomMembers) > 0:
-        the_chosen_one = random.choice(classroomMembers)
+
+    previously_asked = load_bingo()
+
+    still_not_asked = list(set(classroomMembers)-set(previously_asked['bingo']))
+
+    if len(still_not_asked) > 0:
+        the_chosen_one = random.choice(still_not_asked)
+        previously_asked['bingo'].append(the_chosen_one)
+        save_bingo(previously_asked)
+
         msg = await ctx.send(f'Tag, {the_chosen_one}, you\'re it!')
         await msg.add_reaction('\U0001F929')  # add star struck
     else:
-        await ctx.send(f'No one is in the classroom!')
+        await ctx.send(f'No one left in the classroom to ask!')
+        save_bingo(get_empty_json('bingo'))
+
+
+@client.command(help='Clear the persisted bingo list', hidden=True)
+@commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
+async def bingoClear(ctx):
+    await ctx.channel.purge(limit=1)
+    save_bingo(get_empty_json('bingo'))
 
 discordKey = os.getenv("DAVEBOT")
 client.run(discordKey)
