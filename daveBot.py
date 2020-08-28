@@ -295,6 +295,19 @@ async def callRoll(ctx, course=None):
     save_roll(roll)
 
 
+@client.command(help='Randomly choose one student from the Classroom', hidden=True)
+@commands.has_permissions(administrator=True, manage_messages=True, manage_roles=True)
+async def bingo(ctx):
+    await ctx.channel.purge(limit=1)
+
+    channels = [channel for channel in client.get_all_channels() if
+                (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
+    classroomMembers = [member for member in channels[0].members if
+                        "professor" not in [role.name for role in member.roles]]
+    the_chosen_one = random.choice(classroomMembers)
+    msg = await ctx.send(f'Tag, {the_chosen_one}, you\'re it!')
+    await msg.add_reaction('\U0001F929')  # add star struck
+
 discordKey = os.getenv("DAVEBOT")
 client.run(discordKey)
 
