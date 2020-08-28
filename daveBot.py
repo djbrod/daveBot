@@ -9,10 +9,6 @@ import datetime
 import discord
 from discord.ext import commands
 
-name_of_queue = 'queue'  # Changed to the sanitized server name later!
-name_of_roll = 'roll'  # Changed to the sanitized server name later!
-filename = 'queue.json'
-rollFilename = 'roll.json'
 daveBotCommandPrefix = '!'
 
 
@@ -28,7 +24,7 @@ def get_empty_json(keyName):
 # noinspection PyShadowingNames
 def get_server_queue(ctx):
     name_of_queue = get_sanitized_identifier(ctx.channel.guild.name)
-    all_queues = load_student_queue()
+    all_queues = load_queue()
     if name_of_queue in all_queues:
         return all_queues[name_of_queue]
     else:
@@ -38,45 +34,43 @@ def get_server_queue(ctx):
 # noinspection PyShadowingNames
 def update_server_queue(ctx, queue):
     name_of_queue = get_sanitized_identifier(ctx.channel.guild.name)
-    all_queues = load_student_queue()
+    all_queues = load_queue()
     all_queues[name_of_queue] = queue
-    save_student_queue(all_queues)
+    save_queue(all_queues)
 
 
-def load_student_queue():
-    file_json_data = get_empty_json(name_of_queue)
+def load_json(data_type, default):
+    file_json_data = default
 
-    if os.path.exists(filename):
-        with open(filename) as f:
+    if os.path.exists(data_type + '.json'):
+        with open(data_type + '.json') as f:
             file_json_data = json.load(f)
 
     return file_json_data
 
 
-def save_student_queue(obj):
+def save_json(data_type, obj):
     if not isinstance(obj, dict):
         print("Please check type of object - should be of type 'dict'", file=sys.stderr)
     else:
-        with open(filename, 'w') as outfile:
+        with open(data_type + '.json', 'w') as outfile:
             json.dump(obj, outfile, indent=4)
 
 
-def load_roll():
-    file_json_data = get_empty_json(name_of_roll)
+def save_queue(obj):
+    save_json('queue', obj)
 
-    if os.path.exists(rollFilename):
-        with open(rollFilename) as f:
-            file_json_data = json.load(f)
 
-    return file_json_data
+def load_queue():
+    return load_json('queue', get_empty_json('queue'))
 
 
 def save_roll(obj):
-    if not isinstance(obj, dict):
-        print("Please check type of object - should be of type 'dict'", file=sys.stderr)
-    else:
-        with open(rollFilename, 'w') as outfile:
-            json.dump(obj, outfile, indent=4)
+    save_json('roll', obj)
+
+
+def load_roll():
+    return load_json('roll', get_empty_json('roll'))
 
 
 # Create Discord Bot
@@ -89,7 +83,7 @@ async def on_ready():
     await client.change_presence(status=discord.Status.online,
                                  activity=discord.Activity(type=discord.ActivityType.listening, name='your commands'))
 
-    all_queues = load_student_queue()
+    all_queues = load_queue()
 
     for guild in client.guilds:
         sanitized_name = get_sanitized_identifier(guild.name)
@@ -102,7 +96,7 @@ async def on_ready():
             all_queues[sanitized_name] = []
             print("Adding a server:" + sanitized_name)
 
-    save_student_queue(all_queues)
+    save_queue(all_queues)
 
 
 @client.command(help='Add yourself to the queue for office hours')
