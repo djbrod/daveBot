@@ -305,7 +305,7 @@ async def bingo(ctx):
 
     channels = [channel for channel in client.get_all_channels() if
                 (channel.name == 'Classroom') & (channel.guild.name == ctx.guild.name)]
-    classroomMembers = [member.name for member in channels[0].members if
+    classroomMembers = [member.display_name for member in channels[0].members if
                         "professor" not in [role.name for role in member.roles]]
 
     previously_asked = load_bingo()
